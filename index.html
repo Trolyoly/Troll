@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Don't Lift the Burgers!</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden; /* Prevent scrollbar from animation */
+        }
+
+        h1 {
+            color: #ff2222;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .cups {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 80px; /* Give space for cups to lift */
+            position: relative; /* For z-indexing if needed */
+            z-index: 10;
+        }
+
+        .cup {
+            width: 120px;
+            height: 150px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative; /* Important for positioning surprise underneath */
+            z-index: 1; /* Ensure cup is above potential surprise */
+        }
+
+        .cup:hover {
+            transform: scale(1.1);
+        }
+
+        /* New CSS for Cup Lift Animation */
+        .cup.lifted {
+            animation: liftCup 0.5s forwards ease-out; /* forwards keeps the final state */
+        }
+
+        @keyframes liftCup {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-70px) scale(1.1);
+            }
+            100% {
+                transform: translateY(-50px);
+            }
+        }
+
+        /* --- JUMPSCARE CSS --- */
+
+        /* Base style for jumpscare overlay */
+        .jumpscare-overlay {
+            position: fixed; /* Fixed position relative to the viewport */
+            top: 0;
+            left: 0;
+            width: 100vw; /* Take full viewport width */
+            height: 100vh; /* Take full viewport height */
+            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
+            display: flex;
+            flex-direction: column; /* Arrange image and text vertically */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* Make sure it's on top of everything */
+            opacity: 0; /* Start hidden */
+            pointer-events: none; /* Allow interaction with elements below initially */
+            transition: opacity 0.2s ease-out; /* Smooth fade in */
+        }
+
+        .jumpscare-overlay.active {
+            opacity: 1; /* Fade in */
+            pointer-events: all; /* Block interactions below when active */
+        }
+
+        .jumpscare-img {
+            max-width: 90%; /* Max width relative to overlay */
+            max-height: 70%; /* Adjust max height to leave space for text */
+            object-fit: contain; /* Ensure image fits */
+            transform: scale(0.1) rotate(0deg); /* Start small */
+            opacity: 0; /* Start hidden */
+            transition: transform 0.3s, opacity 0.3s; /* Smooth transition for image */
+        }
+
+        /* Animation for the bug */
+        .jumpscare-img.bug-jumpscare {
+            animation: bugFlyIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; /* Bouncy animation */
+        }
+
+        @keyframes bugFlyIn {
+            0% {
+                transform: scale(0.1) rotate(0deg);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.2) rotate(10deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Animation for the ghost */
+        .jumpscare-img.ghost-jumpscare {
+            animation: ghostFloatIn 0.4s ease-out forwards; /* Smoother float */
+        }
+
+        @keyframes ghostFloatIn {
+            0% {
+                transform: scale(0.1) translateY(100px);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.1) translateY(-20px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) translateY(0px);
+                opacity: 1;
+            }
+        }
+
+        /* Animation for spider (similar to bug, or unique) */
+        .jumpscare-img.spider-jumpscare {
+            animation: spiderDrop 0.3s ease-in forwards;
+        }
+
+        @keyframes spiderDrop {
+            0% {
+                transform: scale(0.1) translateY(-200px);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.1) translateY(20px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) translateY(0px);
+                opacity: 1;
+            }
+        }
+
+        /* --- NEW CSS for CANDY ANIMATION --- */
+        .jumpscare-img.candy-jumpscare { /* Re-using jumpscare-img class for consistency */
+            animation: candyPopIn 0.5s ease-out forwards;
+        }
+
+        @keyframes candyPopIn {
+            0% {
+                transform: scale(0.1);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* --- NEW CSS for AOG.GIF ANIMATION --- */
+        /* Changed from empty-surprise to aog-jumpscare for clarity and specific styling */
+        .jumpscare-img.aog-jumpscare {
+            animation: aogAppear 1s ease-out forwards; /* Slightly longer intro animation */
+            max-width: 100%; /* Allow it to potentially take more width */
+            max-height: 100%; /* Allow it to potentially take more height */
+        }
+
+        @keyframes aogAppear {
+            0% {
+                transform: scale(0.1); /* Start smaller to make it 'pop' more */
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.5); /* Slightly overshoot for a pop effect */
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+
+        /* --- NEW CSS for JUMPSCARE TEXT --- */
+        .jumpscare-text {
+            font-size: 2.5em; /* Make it large and clear */
+            font-weight: bold;
+            color: #fff; /* White text */
+            /* Red glow for scary text - adjust color/spread as desired */
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 25px rgba(255, 0, 0, 0.6);
+            text-align: center;
+            margin-top: 20px; /* Space between image and text */
+            opacity: 0; /* Start hidden */
+            transform: translateY(20px); /* Start slightly below */
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* Smooth transition */
+            z-index: 10000; /* Ensure text is above everything */
+        }
+
+        /* New style for non-scary text, applied through JS */
+        .jumpscare-text.happy {
+            text-shadow: 0 0 15px rgba(0, 255, 0, 0.8), 0 0 25px rgba(0, 255, 0, 0.6); /* Green glow */
+        }
+
+        /* When the overlay is active, show the text */
+        .jumpscare-overlay.active .jumpscare-text {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Text for non-scary outcomes - keep it simple */
+        .surprise-text {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s ease-out;
+            position: fixed; /* Fixed to screen */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            z-index: 999;
+        }
+
+        .surprise-text.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Hide the result div text, as content is now animated near the cup */
+        .result {
+            margin-top: 30px;
+            font-size: 22px;
+            min-height: 50px; /* Reserve space */
+            display: none; /* We don't need this div for displaying results anymore */
+        }
+
+        /* Styles for the new counter table */
+        .troll-counter-container {
+            margin-top: 50px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .troll-counter-table {
+            border-collapse: collapse;
+            width: 200px;
+            margin: 0 auto; /* Center the table */
+        }
+
+        .troll-counter-table th, .troll-counter-table td {
+            border: 2px solid #ff2222; /* Red border for a scary theme */
+            padding: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .troll-counter-table th {
+            background-color: #550000; /* Darker red for header */
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚠️ DON'T LIFT THE BURGERS! ⚠️</h1>
+    <h2>One of these burgers is hiding something… dare to lift it?</h2>
+
+    <div class="cups">
+        <img src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" class="cup" onclick="liftCup(1)" alt="Cup">
+        <img src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" class="cup" onclick="liftCup(2)" alt="Cup">
+        <img src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" class="cup" onclick="liftCup(3)" alt="Cup">
+    </div>
+
+    <div class="result" id="result"></div>
+    <audio id="spookySound" src="audio/spooky.mp3"></audio>
+    <audio id="ghostSound" src="audio/ghost.mp3"></audio>
+    <audio id="candySound" src="audio/candy.mp3"></audio>
+    <audio id="bugSound" src="audio/bug.mp3"></audio>
+    <audio id="spiderSound" src="audio/spider.mp3"></audio>
+
+    <br>
+    <br>
+
+    <div class="troll-counter-container">
+        <table class="troll-counter-table">
+            <thead>
+                <tr>
+                    <th>Number of Times Trolled</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="trollCount">0</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let cupLifted = false; // Flag to prevent multiple lifts
+        let timesTrolled = 0; // Initialize troll counter
+
+        // Function to update the troll count displayed on the page
+        function updateTrollCount() {
+            document.getElementById('trollCount').textContent = timesTrolled;
+        }
+
+        // Function to stop all sounds
+        function stopAllSounds() {
+            document.querySelectorAll('audio').forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
+            });
+        }
+
+        function handleSurpriseDisplay(imgSrc, animationClass, textContent, isScary, textColor) {
+            const overlay = document.createElement('div');
+            overlay.className = 'jumpscare-overlay';
+
+            const imgElement = document.createElement('img');
+            imgElement.className = `jumpscare-img ${animationClass}`;
+            imgElement.src = imgSrc;
+            imgElement.alt = "Surprise";
+
+            overlay.appendChild(imgElement);
+
+            const textElement = document.createElement('div');
+            textElement.className = 'jumpscare-text';
+            textElement.textContent = textContent;
+
+            if (textColor) {
+                textElement.style.color = textColor;
+                textElement.style.textShadow = '0 0 10px rgba(255,255,255,0.7)';
+            }
+            if (!isScary) {
+                textElement.classList.add('happy');
+            }
+
+            overlay.appendChild(textElement);
+            document.body.appendChild(overlay);
+
+            setTimeout(() => {
+                overlay.classList.add('active');
+            }, 10);
+
+            // STOP ALL SOUNDS before playing a new one
+            stopAllSounds();
+
+            // DETERMINE WHICH SOUND TO PLAY BASED ON IMG SRC
+            if (imgSrc.includes("Aog.gif")) {
+                document.getElementById("spookySound").play();
+                timesTrolled++; // Increment troll counter
+                updateTrollCount(); // Update display
+            } else if (imgSrc.includes("spider.gif")) {
+                document.getElementById("spiderSound").play();
+            } else if (imgSrc.includes("cricket.gif")) {
+                document.getElementById("bugSound").play();
+            } else if (imgSrc.includes("candy.gif")) {
+                document.getElementById("candySound").play();
+            } else if (imgSrc.includes("ghost.gif")) {
+                document.getElementById("ghostSound").play();
+            }
+
+
+            let displayDuration;
+
+            // Specific duration for Aog.gif (6 seconds)
+            if (imgSrc.includes("Aog.gif")) {
+                displayDuration = 6000;
+            } else {
+                displayDuration = isScary ? 2500 : 1500; // Other scary GIFs 2.5 seconds, non-scary 1.5 seconds
+            }
+
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                overlay.addEventListener('transitionend', () => {
+                    overlay.remove();
+                    stopAllSounds(); // Stop all sounds again when overlay is fully removed
+                }, {
+                    once: true
+                });
+            }, displayDuration);
+        }
+
+        function liftCup(choice) {
+            if (cupLifted) {
+                return;
+            }
+            cupLifted = true;
+
+            const cups = document.querySelectorAll('.cup');
+            const chosenCup = cups[choice - 1];
+
+            document.querySelectorAll('.jumpscare-overlay').forEach(el => el.remove());
+            document.querySelectorAll('.surprise-text').forEach(el => el.remove());
+
+            chosenCup.classList.add('lifted');
+
+            // MODIFIED surprises array to increase Aog.gif chances
+            const surprises = [
+                {
+                    text: "A HUGE SPIDER jumps out!",
+                    imgSrc: "images/spider.gif",
+                    animation: "spider-jumpscare",
+                    scary: true
+                },
+                {
+                    text: "A creepy bug crawls away!",
+                    imgSrc: "images/cricket.gif",
+                    animation: "bug-jumpscare",
+                    scary: true
+                },
+                {
+                    text: "You've been TROLLED!!!", // Increased chance: 3 instances
+                    imgSrc: "images/Aog.gif",
+                    animation: "aog-jumpscare",
+                    scary: true,
+                    color: '#FFD700'
+                },
+                {
+                    text: "You've been TROLLED!!!", // Increased chance: 3 instances
+                    imgSrc: "images/Aog.gif",
+                    animation: "aog-jumpscare",
+                    scary: true,
+                    color: '#FFD700'
+                },
+                {
+                    text: "You've been TROLLED!!!", // Increased chance: 3 instances
+                    imgSrc: "images/Aog.gif",
+                    animation: "aog-jumpscare",
+                    scary: true,
+                    color: '#FFD700'
+                },
+                {
+                    text: "Surprise! It's candy!",
+                    imgSrc: "images/candy.gif",
+                    animation: "candy-jumpscare",
+                    scary: false,
+                    color: '#FFD700'
+                },
+                {
+                    text: "A tiny ghost says BOO!",
+                    imgSrc: "images/ghost.gif",
+                    animation: "ghost-jumpscare",
+                    scary: true
+                }
+            ];
+
+            let randomSurprise = surprises[Math.floor(Math.random() * surprises.length)];
+
+            setTimeout(() => {
+                handleSurpriseDisplay(
+                    randomSurprise.imgSrc,
+                    randomSurprise.animation,
+                    randomSurprise.text,
+                    randomSurprise.scary,
+                    randomSurprise.color
+                );
+            }, 300);
+
+            setTimeout(() => {
+                chosenCup.classList.remove('lifted');
+                cupLifted = false;
+            }, 2000);
+        }
+
+        // Initialize display when the page loads
+        updateTrollCount();
+    </script>
+</body>
+</html>
